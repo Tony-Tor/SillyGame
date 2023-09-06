@@ -1,0 +1,290 @@
+<html>
+<head>
+<title>Test Web</title>
+</head>
+<body>
+<canvas id="canvas">wtf?!</canvas>
+<script type="application/javascript">
+
+function rect(img, x, y) {
+    this.x = x; // координата х
+    this.y = y; // координата у
+
+    this.img = new Image();
+    this.img.src=img;
+
+    // функция рисует прямоугольник согласно заданным параметрам
+    this.draw = function() {
+        context.drawImage(this.img, this.x, this.y);
+    };
+}
+
+function playerMove(e) {
+    if (start) {
+        var y = e.pageY;
+	var x = e.pageX;
+ 	player1.tx=x;
+	player1.ty=y;
+    }
+}
+
+function play(){
+	draw();
+	update();
+}
+
+function draw(){
+	//отрисовка локации
+	switch(game.location){
+	case 0:location_town.draw();
+	sword.draw();
+	hp.draw();
+	toroad.draw();
+	tocave.draw();
+	break;
+	case 1:location_cave.draw();
+	totown.draw();
+	dragon.draw();
+	break;
+	case 2:location_road.draw();
+	totown.draw();
+	goblin1.draw();
+	goblin2.draw();
+	goblin3.draw();
+	break;
+	};
+	player1.draw();
+// вывод статстики
+        context.font = 'bold 16px courier';
+        context.textBaseline = 'top';
+        context.fillStyle = '#000';
+        context.fillText("Gold: " + player1.gold + " Damage: " + player1.damage + " Exp: " + player1.lvl, 0, 380);
+        context.fillText("HP: " + player1.hp, 0, 360);
+
+}
+
+function update(){
+	if(start){
+        var y = player1.ty-player1.y;
+	var x = player1.tx-player1.x;
+	var l = Math.sqrt(x*x+y*y);
+	x=x/l;
+	y=y/l;
+	//if(((x<0&&player1.x>player1.tx)||(x>0&&player1.x<player1.tx))&&((y<0&&player1.y>player1.ty)||(y>0&&player1.y<player1.ty))){
+	player1.x+=x*5;
+	player1.y+=y*5;//}
+	if(game.location==2){
+	goblin1.update(1);
+	goblin1.attack();
+	goblin2.update(2);
+	goblin2.attack();
+	goblin3.update(3);
+	goblin3.attack();
+	}
+	if(game.location==1){
+	fair.fireattack(5);
+	dragon.update(0.1);
+	dragon.attack();
+	}
+	if(player1.lvl>3){player1.lvl=0;
+	player1.hp=10;
+	}	
+	}
+}
+
+function goblins(hp,x,y,pic,lvl){
+	this.hp=hp;
+	this.x=x;
+	this.y=y;
+	this.lvl=lvl;
+	this.draw=function(){
+		if(this.hp>0){
+		this.img=new rect(pic,this.x,this.y);
+		this.img.draw();}
+	};
+	this.update=function(a){
+		if(this.hp>0){
+			if(player1.hp>0){
+		var gx=player1.x-this.x;
+		var gy=player1.y-this.y;
+		var l = Math.sqrt(gx*gx+gy*gy);
+		this.x+=gx/l*a;
+		this.y+=gy/l*a;}
+		
+		}else{player1.lvl+=this.lvl;
+		player1.gold+=this.lvl*10;
+		this.lvl=0;
+		}
+	};
+	this.attack=function(){
+		if(this.hp>0&&player1.hp>0){
+		var gx=player1.x-this.x;
+		var gy=player1.y-this.y;
+		if(Math.sqrt(gx*gx+gy*gy)<80){
+		player1.hp-=0.1;
+		}
+		}
+	}
+	this.fireattack=function(a){
+		if(player1.hp>0&&dragon.hp>0){
+		this.img=new rect(pic,this.x,this.y);
+		this.img.draw();
+		var gx=player1.x-this.x;
+		var gy=player1.y-this.y;
+		var l = Math.sqrt(gx*gx+gy*gy);
+		if(l<5){
+		player1.hp-=0.5;
+		this.x=dragon.x;
+		this.y=dragon.y;		
+		}
+		this.x+=gx/l*a;
+		this.y+=gy/l*a;}
+		
+	}
+}
+
+function player(hp,x,y){
+	this.hp=hp;
+	this.lvl=1;
+	this.x=x;
+	this.damage=1;
+	this.y=y;
+	this.tx=1;
+	this.ty=1;
+	this.gold=20;
+	this.draw=function(){
+		if(this.hp>0){
+		this.img=new rect('player.png',this.x-20,this.y-20);
+		this.img.draw();}
+	};
+	this.attack=function(a){
+		if(this.hp>0){
+		var gx=a.x-this.x;
+		var gy=a.y-this.y;
+		if(Math.sqrt(gx*gx+gy*gy)<80){
+		a.hp-=this.damage;
+		}}
+	}
+}
+
+function attack(){
+
+}
+
+function button(x,y,location){
+	this.x=x;
+	this.y=y;
+	this.location=location;
+	this.draw=function(){
+		this.img=new rect('exit.png',this.x,this.y);
+		this.img.draw();
+	};
+	this.click=function(){
+		var gx=player1.x-this.x-40;
+		var gy=player1.y-this.y-40;
+		if(Math.sqrt(gx*gx+gy*gy)<30){
+		game.location=this.location;
+		player1.x=360;
+		player1.y=360;
+		}
+	}
+}
+
+function coolsword(x,y,damage){
+	this.x=x;
+	this.y=y;
+	this.damage=damage;
+	this.sword=true;
+	this.draw=function(){
+		if(this.sword){
+		this.img=new rect('coolsword.png',this.x,this.y);
+		this.img.draw();}
+	};
+	this.click=function(){
+		var gx=player1.x-this.x-40;
+		var gy=player1.y-this.y-40;
+		if(Math.sqrt(gx*gx+gy*gy)<30&&player1.gold>=40&&this.sword){
+			player1.damage=this.damage;
+			player1.gold-=40;
+			this.sword=false;
+		}
+	}
+}
+
+function hp(x,y,damage){
+	this.x=x;
+	this.y=y;
+	this.damage=damage;
+	this.sword=true;
+	this.draw=function(){
+		if(this.sword){
+		this.img=new rect('hp.png',this.x,this.y);
+		this.img.draw();}
+	};
+	this.click=function(){
+		var gx=player1.x-this.x-40;
+		var gy=player1.y-this.y-40;
+		if(Math.sqrt(gx*gx+gy*gy)<30&&player1.gold>=10&&this.sword){
+			player1.hp=this.damage;
+			player1.gold-=10;
+			this.sword=false;
+		}
+	}
+}
+
+function startGame() {
+    if (!start) {
+        start = true;
+    }
+	if(game.location==0){
+	sword.click();
+	hp.click();
+	toroad.click();
+	tocave.click();
+	}
+	if(game.location==2){
+	totown.click();
+	player1.attack(goblin1);
+	player1.attack(goblin2);
+	player1.attack(goblin3);
+	}
+	if(game.location==1){
+	totown.click();
+	player1.attack(dragon);
+	}
+	
+}
+
+function initgame(){} //HACK: bebe
+
+function init() {
+    start = false;
+    var canvas = document.getElementById("canvas");
+	location_town=new rect('town.png',0,0);
+	location_cave=new rect('cave.png',0,0);
+	location_road=new rect('road.png',0,0);
+	game= new initgame();
+	game.location=0;
+	sword=new coolsword(100,100,2);
+	hp=new hp(250,250,10);
+	goblin1=new goblins(5,40,40,'goblin.png',1);
+	goblin3=new goblins(5,40,100,'goblin.png',1);
+	goblin2=new goblins(5,100,40,'goblin.png',1);
+	fair=new goblins(0,100,100,'fair.png',0);
+	dragon=new goblins(10,100,100,'dragon.png',4);
+	player1=new player(10,360,360);
+	totown=new button(360,360,0);
+	toroad=new button(0,0,2);
+	tocave=new button(360,0,1);
+    canvas.width = 400;
+    canvas.height = 400;
+    context = canvas.getContext("2d");
+    canvas.onmousemove = playerMove;
+    canvas.onclick = startGame;
+    setInterval(play, 1000 / 50);
+}
+
+init();
+</script>
+</body>
+</html>
